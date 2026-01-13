@@ -2,9 +2,8 @@ import Header from '@/components/landing/Header';
 import HeroSection from '@/components/landing/HeroSection';
 import ProblemSolution from '@/components/landing/ProblemSolution';
 import FeaturesSection from '@/components/landing/FeaturesSection';
-import APISection from '@/components/landing/APISection';
-import ArchitectureSection from '@/components/landing/ArchitectureSection';
-import DemoSection from '@/components/landing/DemoSection';
+import LiveDemoSection from '@/components/landing/LiveDemoSection';
+import APIGuideSection from '@/components/landing/APIGuideSection';
 import TechStackFooter from '@/components/landing/TechStackFooter';
 
 const Landing = () => {
@@ -15,9 +14,8 @@ const Landing = () => {
         <HeroSection />
         <ProblemSolution />
         <FeaturesSection />
-        <APISection />
-        <ArchitectureSection />
-        <DemoSection />
+        <LiveDemoSection />
+        <APIGuideSection />
       </main>
       <TechStackFooter />
     </div>

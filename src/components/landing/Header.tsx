@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Activity, Menu, X } from 'lucide-react';
 import { useState } from 'react';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -22,18 +23,16 @@ const Header = () => {
             <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Features
             </a>
-            <a href="#api" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              API
-            </a>
-            <a href="#architecture" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Architecture
-            </a>
             <a href="#demo" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Demo
+              Live Demo
+            </a>
+            <a href="#api-guide" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              API Guide
             </a>
           </nav>
 
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-2">
+            <ThemeToggle />
             <Link to="/login">
               <Button variant="ghost" size="sm">
                 Sign In
@@ -47,16 +46,19 @@ const Header = () => {
           </div>
 
           {/* Mobile Menu Button */}
-          <button
-            className="md:hidden p-2"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            {isMenuOpen ? (
-              <X className="h-6 w-6 text-foreground" />
-            ) : (
-              <Menu className="h-6 w-6 text-foreground" />
-            )}
-          </button>
+          <div className="flex items-center gap-2 md:hidden">
+            <ThemeToggle />
+            <button
+              className="p-2"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? (
+                <X className="h-6 w-6 text-foreground" />
+              ) : (
+                <Menu className="h-6 w-6 text-foreground" />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Menu */}
@@ -66,14 +68,11 @@ const Header = () => {
               <a href="#features" className="text-sm text-muted-foreground hover:text-foreground">
                 Features
               </a>
-              <a href="#api" className="text-sm text-muted-foreground hover:text-foreground">
-                API
-              </a>
-              <a href="#architecture" className="text-sm text-muted-foreground hover:text-foreground">
-                Architecture
-              </a>
               <a href="#demo" className="text-sm text-muted-foreground hover:text-foreground">
-                Demo
+                Live Demo
+              </a>
+              <a href="#api-guide" className="text-sm text-muted-foreground hover:text-foreground">
+                API Guide
               </a>
               <div className="flex gap-4 pt-4">
                 <Link to="/login">
