@@ -85,6 +85,8 @@ const planningMetrics = [
   { label: 'Avg Response Time', value: '2.4h', change: '-45%', icon: Clock },
   { label: 'Cost Savings', value: '$847K', change: '+18%', icon: TrendingUp },
   { label: 'Lives Impacted', value: '12,400+', change: '+31%', icon: Activity },
+  { label: 'Emergency Response', value: '< 15min', change: '-60%', icon: Zap },
+  { label: 'Medicine Wastage', value: '-42%', change: 'Reduced', icon: RefreshCw },
 ];
 
 // Real-time alerts stream
@@ -397,7 +399,7 @@ const AIFeaturesSection = () => {
             <p className="text-sm text-muted-foreground mb-6">
               Helping hospitals move from reactive handling to predictive planning, reducing shortages and saving lives
             </p>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
               {planningMetrics.map((metric, idx) => (
                 <div key={idx} className="p-4 rounded-lg bg-muted/30 text-center">
                   <metric.icon className="h-8 w-8 text-primary mx-auto mb-2 opacity-70" />
@@ -457,6 +459,14 @@ const AIFeaturesSection = () => {
                   <li className="flex items-start gap-2">
                     <span className="text-green-500 mt-0.5">✓</span>
                     Real-time automated monitoring
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-500 mt-0.5">✓</span>
+                    Faster emergency response times
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-500 mt-0.5">✓</span>
+                    Reduced medicine wastage through smart distribution
                   </li>
                 </ul>
               </div>
