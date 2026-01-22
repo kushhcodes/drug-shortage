@@ -50,7 +50,8 @@ const Login = () => {
     try {
       await login(email, password);
       await refreshUser();
-      navigate('/dashboard');
+      // Force full page reload to ensure auth state is fresh
+      window.location.href = '/dashboard';
     } catch (err) {
       setError('Invalid credentials. Please check your email and password.');
     } finally {
@@ -60,12 +61,12 @@ const Login = () => {
 
   const handleRegistrationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (registrationData.password !== registrationData.confirmPassword) {
       setError('Passwords do not match.');
       return;
     }
-    
+
     if (registrationData.password.length < 8) {
       setError('Password must be at least 8 characters long.');
       return;
@@ -102,7 +103,7 @@ const Login = () => {
 
   const passwordStrength = getPasswordStrength(registrationData.password);
 
-  const isFormValid = 
+  const isFormValid =
     registrationData.hospitalName &&
     registrationData.email &&
     registrationData.phone &&
@@ -114,8 +115,8 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <Link 
-          to="/" 
+        <Link
+          to="/"
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -133,7 +134,7 @@ const Login = () => {
               {authMode === 'login' ? 'Welcome Back' : 'Register Your Hospital'}
             </CardTitle>
             <CardDescription>
-              {authMode === 'login' 
+              {authMode === 'login'
                 ? 'Sign in to access the MedPredict dashboard'
                 : 'Join the network of hospitals using AI-powered inventory management'
               }
@@ -146,22 +147,20 @@ const Login = () => {
               <button
                 type="button"
                 onClick={() => { setAuthMode('login'); setError(''); }}
-                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-                  authMode === 'login'
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${authMode === 'login'
                     ? 'bg-background text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'
-                }`}
+                  }`}
               >
                 Login
               </button>
               <button
                 type="button"
                 onClick={() => { setAuthMode('register'); setError(''); }}
-                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-                  authMode === 'register'
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${authMode === 'register'
                     ? 'bg-background text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'
-                }`}
+                  }`}
               >
                 Register
               </button>
@@ -329,12 +328,11 @@ const Login = () => {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <Progress value={passwordStrength.strength} className={`h-1.5 flex-1 ${passwordStrength.color}`} />
-                        <span className={`text-xs font-medium ${
-                          passwordStrength.strength <= 25 ? 'text-destructive' :
-                          passwordStrength.strength <= 50 ? 'text-yellow-500' :
-                          passwordStrength.strength <= 75 ? 'text-blue-500' :
-                          'text-green-500'
-                        }`}>{passwordStrength.label}</span>
+                        <span className={`text-xs font-medium ${passwordStrength.strength <= 25 ? 'text-destructive' :
+                            passwordStrength.strength <= 50 ? 'text-yellow-500' :
+                              passwordStrength.strength <= 75 ? 'text-blue-500' :
+                                'text-green-500'
+                          }`}>{passwordStrength.label}</span>
                       </div>
                       <p className="text-xs text-muted-foreground">
                         Use 8+ characters with uppercase, numbers, and symbols
@@ -369,9 +367,9 @@ const Login = () => {
                   )}
                 </div>
 
-                <Button 
-                  type="submit" 
-                  className="w-full" 
+                <Button
+                  type="submit"
+                  className="w-full"
                   disabled={isLoading || !isFormValid}
                 >
                   {isLoading ? 'Creating Account...' : 'Create Account'}

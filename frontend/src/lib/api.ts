@@ -27,7 +27,7 @@ export const apiRequest = async <T>(
   options: RequestInit = {}
 ): Promise<T> => {
   const token = getAuthToken();
-  
+
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...options.headers,
@@ -138,3 +138,169 @@ export const getPredictions = () => apiRequest<Array<{
   confidence: number;
   risk_level: string;
 }>>('/api/predictions/');
+
+// ============================================
+// ADMIN CRUD APIs
+// ============================================
+
+// Types
+export interface Hospital {
+  id: number;
+  name: string;
+  registration_number?: string;
+  hospital_type: string;
+  bed_capacity: number;
+  address?: string;
+  city: string;
+  state: string;
+  pincode?: string;
+  contact_person?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  is_active: boolean;
+  created_at?: string;
+}
+
+export interface Medicine {
+  id: number;
+  name: string;
+  generic_name?: string;
+  category: string;
+  strength?: string;
+  manufacturer?: string;
+  is_essential: boolean;
+  is_active: boolean;
+  created_at?: string;
+}
+
+export interface Inventory {
+  id: number;
+  hospital: number;
+  hospital_name?: string;
+  medicine: number;
+  medicine_name?: string;
+  current_stock: number;
+  reorder_level: number;
+  max_capacity?: number;
+  average_daily_usage?: number;
+  last_updated?: string;
+  stock_status?: string;
+}
+
+export interface Alert {
+  id: number;
+  hospital: number;
+  hospital_name?: string;
+  medicine: number;
+  medicine_name?: string;
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  status: 'ACTIVE' | 'ACKNOWLEDGED' | 'RESOLVED';
+  current_stock: number;
+  predicted_stockout_date?: string;
+  message?: string;
+  created_at?: string;
+}
+
+// Hospital CRUD
+export const getHospitalsAdmin = () =>
+  apiRequest<Hospital[]>('/api/hospitals/');
+
+export const getHospital = (id: number) =>
+  apiRequest<Hospital>(`/api/hospitals/${id}/`);
+
+export const createHospital = (data: Partial<Hospital>) =>
+  apiRequest<Hospital>('/api/hospitals/', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+export const updateHospital = (id: number, data: Partial<Hospital>) =>
+  apiRequest<Hospital>(`/api/hospitals/${id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+
+export const deleteHospital = (id: number) =>
+  apiRequest<void>(`/api/hospitals/${id}/`, {
+    method: 'DELETE',
+  });
+
+// Medicine CRUD
+export const getMedicinesAdmin = () =>
+  apiRequest<Medicine[]>('/api/medicines/');
+
+export const getMedicine = (id: number) =>
+  apiRequest<Medicine>(`/api/medicines/${id}/`);
+
+export const createMedicine = (data: Partial<Medicine>) =>
+  apiRequest<Medicine>('/api/medicines/', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+export const updateMedicine = (id: number, data: Partial<Medicine>) =>
+  apiRequest<Medicine>(`/api/medicines/${id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+
+export const deleteMedicine = (id: number) =>
+  apiRequest<void>(`/api/medicines/${id}/`, {
+    method: 'DELETE',
+  });
+
+// Inventory CRUD
+export const getInventoryAdmin = () =>
+  apiRequest<Inventory[]>('/api/inventory/');
+
+export const getInventoryItem = (id: number) =>
+  apiRequest<Inventory>(`/api/inventory/${id}/`);
+
+export const createInventory = (data: Partial<Inventory>) =>
+  apiRequest<Inventory>('/api/inventory/', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+export const updateInventory = (id: number, data: Partial<Inventory>) =>
+  apiRequest<Inventory>(`/api/inventory/${id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+
+export const deleteInventory = (id: number) =>
+  apiRequest<void>(`/api/inventory/${id}/`, {
+    method: 'DELETE',
+  });
+
+export const getLowStockAll = () =>
+  apiRequest<Inventory[]>('/api/inventory/low_stock/');
+
+export const getOutOfStock = () =>
+  apiRequest<Inventory[]>('/api/inventory/out_of_stock/');
+
+// Alerts CRUD
+export const getAlerts = () =>
+  apiRequest<Alert[]>('/api/alerts/');
+
+export const getAlert = (id: number) =>
+  apiRequest<Alert>(`/api/alerts/${id}/`);
+
+export const updateAlert = (id: number, data: Partial<Alert>) =>
+  apiRequest<Alert>(`/api/alerts/${id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+
+export const resolveAlert = (id: number) =>
+  apiRequest<Alert>(`/api/alerts/${id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status: 'RESOLVED' }),
+  });
+
+export const acknowledgeAlert = (id: number) =>
+  apiRequest<Alert>(`/api/alerts/${id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status: 'ACKNOWLEDGED' }),
+  });
+
