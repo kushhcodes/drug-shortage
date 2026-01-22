@@ -175,7 +175,13 @@ SPECTACULAR_SETTINGS = {
     'COMPONENT_SPLIT_REQUEST': True,
 }
 # CORS settings - add your frontend URL here
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
+CORS_ALLOWED_ORIGINS = os.getenv(
+    'CORS_ALLOWED_ORIGINS', 
+    'http://localhost:5173,http://localhost:8080,http://127.0.0.1:8080,http://localhost:3000'
+).split(',')
+
+# Allow credentials for JWT authentication
+CORS_ALLOW_CREDENTIALS = True
 
 # Production security settings
 if not DEBUG:

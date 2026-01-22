@@ -63,26 +63,36 @@ class DrugShortagePredictor:
         
         # 5. DRUG CATEGORY ENCODING
         if 'drug_category' in df.columns:
+            # Normalize to title case to handle mismatches (Antibiotic vs ANTIBIOTIC)
+            df['drug_category'] = df['drug_category'].fillna('Unknown').astype(str).str.title()
+            
             if is_training:
                 le = LabelEncoder()
-                df['drug_category_encoded'] = le.fit_transform(df['drug_category'].fillna('Unknown'))
+                df['drug_category_encoded'] = le.fit_transform(df['drug_category'])
                 self.label_encoders['drug_category'] = le
             else:
                 # During prediction, use existing encoder
                 le = self.label_encoders.get('drug_category')
                 if le:
-                    df['drug_category_encoded'] = le.transform(df['drug_category'].fillna('Unknown'))
+                    # Handle unseen categories by assigning a default "Other" or mode
+                    known_classes = set(le.classes_)
+                    df['drug_category'] = df['drug_category'].apply(lambda x: x if x in known_classes else list(known_classes)[0])
+                    df['drug_category_encoded'] = le.transform(df['drug_category'])
         
         # 6. HOSPITAL TYPE ENCODING
         if 'hospital_type' in df.columns:
+            df['hospital_type'] = df['hospital_type'].fillna('Unknown').astype(str).str.title()
+            
             if is_training:
                 le = LabelEncoder()
-                df['hospital_type_encoded'] = le.fit_transform(df['hospital_type'].fillna('Unknown'))
+                df['hospital_type_encoded'] = le.fit_transform(df['hospital_type'])
                 self.label_encoders['hospital_type'] = le
             else:
                 le = self.label_encoders.get('hospital_type')
                 if le:
-                    df['hospital_type_encoded'] = le.transform(df['hospital_type'].fillna('Unknown'))
+                    known_classes = set(le.classes_)
+                    df['hospital_type'] = df['hospital_type'].apply(lambda x: x if x in known_classes else list(known_classes)[0])
+                    df['hospital_type_encoded'] = le.transform(df['hospital_type'])
         
         # Define feature columns
         self.feature_columns = [
@@ -104,8 +114,8 @@ class DrugShortagePredictor:
         """
         try:
             # Import your models
-            from medicines.models import Medicine, Inventory
-            from hospitals.models import Hospital
+            from medicines.models import Medicine
+            from hospitals.models import Hospital, Inventory
             
             # Get all inventory records
             inventories = Inventory.objects.select_related('medicine', 'hospital').all()
@@ -120,21 +130,30 @@ class DrugShortagePredictor:
                     'hospital_id': inv.hospital.id,
                     'hospital_name': inv.hospital.name,
                     'hospital_type': inv.hospital.hospital_type,
-                    'hospital_bed_count': inv.hospital.bed_count or 100,
+                    'hospital_bed_count': inv.hospital.bed_capacity or 100,
                     'current_stock': inv.current_stock or 0,
-                    'daily_consumption': inv.daily_consumption or 0,
+                    'daily_consumption': float(inv.average_daily_usage) or 0,
                     'reorder_level': inv.reorder_level or 50,
                     'last_updated': inv.last_updated or datetime.now(),
-                    'lead_time': inv.lead_time or 7,
+                    'lead_time': 7,  # Default lead time
                 }
                 data.append(record)
             
             df = pd.DataFrame(data)
             
-            # If no real data, generate synthetic data
-            if len(df) < 50:
-                print("Not enough real data. Generating synthetic data for training...")
-                df = self.generate_synthetic_data(1000)
+            # Ensure last_updated is UTC
+            if not df.empty and 'last_updated' in df.columns:
+                df['last_updated'] = pd.to_datetime(df['last_updated'], utc=True)
+            
+            # ALWAYS combine with synthetic data to ensure robust training
+            # This fixes the issue of "not enough data" vs "unseen data"
+            print(f"Loaded {len(df)} real records. Adding synthetic data for better training...")
+            synthetic_df = self.generate_synthetic_data(1000)
+            
+            if not df.empty:
+                df = pd.concat([df, synthetic_df], ignore_index=True)
+            else:
+                df = synthetic_df
             
             # Create target variable: Will there be a shortage in next 7 days?
             # Shortage = stock < (daily_consumption * 7 * 1.2) with 20% buffer
@@ -160,20 +179,24 @@ class DrugShortagePredictor:
             record = {
                 'medicine_id': f'MED{np.random.randint(1, 50):03d}',
                 'medicine_name': f'Medicine_{np.random.choice(["Paracetamol", "Amoxicillin", "Insulin", "Oxygen"])}',
-                'drug_category': np.random.choice(['Antibiotic', 'Analgesic', 'Antiviral', 'Antihypertensive', 'Insulin']),
+                # Use standard categories matching seeded data (Title Case will be applied nicely)
+                'drug_category': np.random.choice(['Antibiotic', 'Analgesic', 'Antiviral', 'Cardiovascular', 'Diabetes', 'Respiratory', 'Gastrointestinal']),
                 'hospital_id': f'HOSP{np.random.randint(1, 20):03d}',
                 'hospital_name': f'Hospital_{np.random.randint(1, 20)}',
-                'hospital_type': np.random.choice(['Government', 'Private', 'Medical College', 'Rural']),
+                'hospital_type': np.random.choice(['Government', 'Private', 'Charitable', 'Medical College']),
                 'hospital_bed_count': np.random.choice([50, 100, 200, 500, 1000]),
                 'current_stock': np.random.randint(0, 500),
                 'daily_consumption': np.random.randint(1, 50),
                 'reorder_level': np.random.randint(20, 100),
                 'lead_time': np.random.randint(3, 14),
-                'last_updated': (datetime.now() - timedelta(days=np.random.randint(0, 365))).strftime('%Y-%m-%d')
+                'last_updated': (datetime.now() - timedelta(days=np.random.randint(0, 365))).isoformat()
             }
             data.append(record)
         
         df = pd.DataFrame(data)
+        
+        # Ensure 'last_updated' is datetime
+        df['last_updated'] = pd.to_datetime(df['last_updated'], utc=True)
         
         # Add realistic patterns
         # Monsoon increases antibiotic consumption
@@ -183,6 +206,12 @@ class DrugShortagePredictor:
         # Rural hospitals have lower stock
         rural_mask = df['hospital_type'] == 'Rural'
         df.loc[rural_mask, 'current_stock'] = df.loc[rural_mask, 'current_stock'] * 0.7
+        
+        # Create target variable: Will there be a shortage in next 7 days?
+        # Shortage = stock < (daily_consumption * 7 * 1.2) with 20% buffer
+        df['shortage_next_7d'] = 0
+        required_stock = df['daily_consumption'] * 7 * 1.2
+        df.loc[df['current_stock'] < required_stock, 'shortage_next_7d'] = 1
         
         return df
     

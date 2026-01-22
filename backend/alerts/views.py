@@ -22,7 +22,7 @@ class AlertViewSet(viewsets.ModelViewSet):
         user = self.request.user
         queryset = Alert.objects.select_related('hospital', 'medicine', 'inventory')
         
-        if user.role == 'HEALTH_AUTHORITY':
+        if user.is_superuser or user.role == 'HEALTH_AUTHORITY':
             return queryset.all()
         elif user.is_hospital_staff and user.hospital:
             return queryset.filter(hospital=user.hospital)
@@ -71,7 +71,7 @@ class RedistributionRequestViewSet(viewsets.ModelViewSet):
         user = self.request.user
         queryset = RedistributionRequest.objects.select_related('source_hospital', 'destination_hospital', 'medicine')
         
-        if user.role == 'HEALTH_AUTHORITY':
+        if user.is_superuser or user.role == 'HEALTH_AUTHORITY':
             return queryset.all()
         elif user.is_hospital_staff and user.hospital:
             return queryset.filter(source_hospital=user.hospital) | queryset.filter(destination_hospital=user.hospital)

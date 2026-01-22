@@ -92,11 +92,22 @@ class PredictShortageView(APIView):
             # Add default values
             defaults = {
                 'reorder_level': data.get('daily_consumption', 0) * 7,
-                'drug_category': 'General',
+                'drug_category': 'General', 
                 'hospital_type': 'General',
+                'hospital_bed_count': 100,  # Default if hospital lookup fails
                 'last_updated': timezone.now().isoformat()
             }
             
+            # Try to fetch actual hospital details if ID provided
+            if 'hospital_id' in data:
+                try:
+                    from hospitals.models import Hospital
+                    hospital = Hospital.objects.get(id=data['hospital_id'])
+                    defaults['hospital_type'] = hospital.hospital_type
+                    defaults['hospital_bed_count'] = hospital.bed_capacity
+                except Exception:
+                    pass
+
             for key, value in defaults.items():
                 if key not in data:
                     data[key] = value
@@ -106,14 +117,40 @@ class PredictShortageView(APIView):
             
             # Create alert if high risk
             if prediction['risk_level'] in ['HIGH', 'CRITICAL']:
-                from alerts.models import Alert
-                Alert.objects.create(
-                    medicine_id=data['medicine_id'],
-                    hospital_id=data['hospital_id'],
-                    severity=prediction['risk_level'],
-                    probability=prediction['shortage_probability'],
-                    message=f"Predicted shortage with {prediction['shortage_probability']:.1%} probability"
-                )
+                try:
+                    from alerts.models import Alert
+                    from hospitals.models import Inventory
+                    from datetime import timedelta
+                    
+                    # Fetch inventory object (required for Alert)
+                    inventory = Inventory.objects.filter(
+                        hospital_id=data['hospital_id'], 
+                        medicine_id=data['medicine_id']
+                    ).first()
+                    
+                    if inventory:
+                        # Calculate details
+                        daily = float(data.get('daily_consumption', 1))
+                        current = float(data.get('current_stock', 0))
+                        days_left = current / daily if daily > 0 else 0
+                        stockout_date = timezone.now() + timedelta(days=days_left)
+                        shortage_qty = int((daily * 7) - current)
+                        if shortage_qty < 0: shortage_qty = 0
+
+                        Alert.objects.create(
+                            hospital_id=data['hospital_id'],
+                            medicine_id=data['medicine_id'],
+                            inventory=inventory,
+                            severity=prediction['risk_level'],
+                            current_stock=int(current),
+                            predicted_stockout_date=stockout_date.date(),
+                            predicted_shortage_quantity=shortage_qty,
+                            confidence_score=prediction['shortage_probability'] * 100,
+                            message=f"Predicted shortage with {prediction['shortage_probability']:.1%} probability"
+                        )
+                except Exception as e:
+                    print(f"Error creating alert: {e}")
+                    # Continue even if alert creation fails
             
             return Response({
                 'success': True,
@@ -180,6 +217,10 @@ class ModelStatusView(APIView):
         
         model_path = os.path.join(settings.BASE_DIR, '..', 'ml_models')
         models_exist = os.path.exists(os.path.join(model_path, 'shortage_model.pkl'))
+        
+        # Try to load if exists but not loaded
+        if models_exist and predictor_instance.model is None:
+            predictor_instance.load_model()
         
         return Response({
             'model_loaded': predictor_instance.model is not None,

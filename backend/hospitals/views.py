@@ -26,7 +26,7 @@ class HospitalViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         user = self.request.user
-        if user.role == 'HEALTH_AUTHORITY':
+        if user.is_superuser or user.role == 'HEALTH_AUTHORITY':
             return Hospital.objects.all()
         elif user.is_hospital_staff and user.hospital:
             return Hospital.objects.filter(id=user.hospital.id)
@@ -62,7 +62,7 @@ class InventoryViewSet(viewsets.ModelViewSet):
         user = self.request.user
         queryset = Inventory.objects.select_related('hospital', 'medicine')
         
-        if user.role == 'HEALTH_AUTHORITY':
+        if user.is_superuser or user.role == 'HEALTH_AUTHORITY':
             return queryset.all()
         elif user.is_hospital_staff and user.hospital:
             return queryset.filter(hospital=user.hospital)
@@ -97,7 +97,7 @@ class InventoryTransactionViewSet(viewsets.ModelViewSet):
         user = self.request.user
         queryset = InventoryTransaction.objects.select_related('inventory__hospital', 'inventory__medicine', 'performed_by')
         
-        if user.role == 'HEALTH_AUTHORITY':
+        if user.is_superuser or user.role == 'HEALTH_AUTHORITY':
             return queryset.all()
         elif user.is_hospital_staff and user.hospital:
             return queryset.filter(inventory__hospital=user.hospital)
