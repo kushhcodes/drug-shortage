@@ -43,14 +43,19 @@ class DrugShortagePredictor:
             df['week_of_year'] = df['date'].dt.isocalendar().week
             
         # 2. SEASONAL FEATURES (India specific)
-        # Monsoon season: June-Sept
-        df['is_monsoon'] = df.get('month', 1).apply(
-            lambda x: 1 if x in [6, 7, 8, 9] else 0
-        )
-        # Winter/Flu season: Oct-Feb
-        df['is_flu_season'] = df.get('month', 1).apply(
-            lambda x: 1 if x in [10, 11, 12, 1, 2] else 0
-        )
+        # 2. SEASONAL FEATURES (India specific)
+        if 'month' in df.columns:
+            # Monsoon season: June-Sept
+            df['is_monsoon'] = df['month'].apply(
+                lambda x: 1 if x in [6, 7, 8, 9] else 0
+            )
+            # Winter/Flu season: Oct-Feb
+            df['is_flu_season'] = df['month'].apply(
+                lambda x: 1 if x in [10, 11, 12, 1, 2] else 0
+            )
+        else:
+            df['is_monsoon'] = 0
+            df['is_flu_season'] = 0
         
         # 3. STOCK-RELATED FEATURES
         df['stock_consumption_ratio'] = df['current_stock'] / (df['daily_consumption'] + 1)
@@ -94,17 +99,29 @@ class DrugShortagePredictor:
                     df['hospital_type'] = df['hospital_type'].apply(lambda x: x if x in known_classes else list(known_classes)[0])
                     df['hospital_type_encoded'] = le.transform(df['hospital_type'])
         
-        # Define feature columns
-        self.feature_columns = [
-            'current_stock', 'daily_consumption', 'reorder_level',
-            'stock_consumption_ratio', 'days_of_supply', 'below_reorder_level',
-            'month', 'day_of_week', 'is_monsoon', 'is_flu_season',
-            'drug_category_encoded', 'hospital_type_encoded'
-        ]
-        
-        # Add conditional columns
-        if 'bed_count_scaled' in df.columns:
-            self.feature_columns.append('bed_count_scaled')
+        # Define feature columns logic for TRAINING
+        if is_training:
+            self.feature_columns = [
+                'current_stock', 'daily_consumption', 'reorder_level',
+                'stock_consumption_ratio', 'days_of_supply', 'below_reorder_level',
+                'month', 'day_of_week', 'is_monsoon', 'is_flu_season',
+                'drug_category_encoded', 'hospital_type_encoded'
+            ]
+            if 'bed_count_scaled' in df.columns:
+                self.feature_columns.append('bed_count_scaled')
+        else:
+            # INFERENCE MODE: Ensure all trained features exist
+            
+            # 1. Handle missing raw inputs first
+            if 'hospital_bed_count' not in df.columns and 'bed_count_scaled' not in df.columns:
+                 df['bed_count_scaled'] = 0.1 # Default 100 beds
+            elif 'hospital_bed_count' in df.columns:
+                 df['bed_count_scaled'] = df['hospital_bed_count'] / 1000
+
+            # 2. Ensure every single feature expected by the model exists
+            for col in self.feature_columns:
+                if col not in df.columns:
+                    df[col] = 0.0 # Default fallback
         
         return df
     

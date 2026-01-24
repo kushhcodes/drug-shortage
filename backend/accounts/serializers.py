@@ -21,89 +21,87 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         help_text="Re-enter password for confirmation"
     )
     
-    hospital_id = serializers.IntegerField(
+    hospital_name = serializers.CharField(
+        write_only=True, 
         required=False,
-        allow_null=True,
-        help_text="Hospital ID (required for hospital staff, optional for now)"
+        help_text="Name of the hospital to create (for new registrations)"
+    )
+    address = serializers.CharField(
+        write_only=True,
+        required=False,
+        help_text="Address of the hospital"
     )
 
-    
     class Meta:
         model = User
-        
         fields = [
-            'id',
-            'username',
-            'email',
-            'password',
-            'password_confirm',
-            'first_name',
-            'last_name',
-            'phone',
-            'role',
-            'hospital_id'
+            'id', 'username', 'email', 'password', 'password_confirm',
+            'first_name', 'last_name', 'phone', 'role', 
+            'hospital_id', 'hospital_name', 'address'
         ]
-        
         extra_kwargs = {
-            'first_name': {'required': True},
-            'last_name': {'required': True},
+            'first_name': {'required': False}, # Optional if hospital_name provided
+            'last_name': {'required': False},
             'email': {'required': True}
         }
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:
-            raise serializers.ValidationError({
-                "password": "Password fields didn't match."
-            })
-        
-        if attrs['role'] in ['HOSPITAL_ADMIN', 'PHARMACIST']:
-            if attrs.get('hospital_id') and not self._hospital_exists(attrs['hospital_id']):
-                raise serializers.ValidationError({
-                    "hospital_id": "Hospital with this ID does not exist."
-                })
-        
+            raise serializers.ValidationError({"password": "Password fields didn't match."})
         return attrs
-    
-    def _hospital_exists(self, hospital_id):
-        try:
-            from hospitals.models import Hospital
-            return Hospital.objects.filter(id=hospital_id).exists()
-        except (ImportError, Exception):
-            return True
-    
-    def validate_email(self, value):
-        value = value.lower()
 
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError(
-                "A user with this email already exists."
-            )
-        
-        return value
-    
-    def validate_username(self, value):
-        if User.objects.filter(username=value).exists():
-            raise serializers.ValidationError(
-                "A user with this username already exists."
-            )
-        
-        return value
- 
     def create(self, validated_data):
         validated_data.pop('password_confirm')
         
+        # Extract hospital data
         hospital_id = validated_data.pop('hospital_id', None)
+        hospital_name = validated_data.pop('hospital_name', None)
+        address = validated_data.pop('address', None)
         
+        # Create user
         user = User.objects.create_user(**validated_data)
         
-        if hospital_id:
-            try:
-                from hospitals.models import Hospital
+        # Logic to link hospital
+        try:
+            from hospitals.models import Hospital
+            
+            if hospital_id:
+                # Link to existing hospital
                 hospital = Hospital.objects.get(id=hospital_id)
                 user.hospital = hospital
-                user.save()
-            except (ImportError, Exception):
-                pass
+            
+            elif hospital_name:
+                # CREATE NEW HOSPITAL with mandatory fields
+                import time
+                reg_num = f"REG-{int(time.time())}"
+                
+                hospital = Hospital.objects.create(
+                    name=hospital_name,
+                    registration_number=reg_num,
+                    address=address or "Address Pending",
+                    city="Unknown", # Defaults
+                    state="Unknown",
+                    pincode="000000",
+                    hospital_type="PRIVATE", # Default for web registration
+                    bed_capacity=100, # Default
+                    contact_person=validated_data.get('first_name', 'Admin'),
+                    contact_email=validated_data.get('email', 'admin@hospital.com'),
+                    contact_phone=validated_data.get('phone', '0000000000'),
+                    is_active=True
+                )
+                user.hospital = hospital
+                
+                # If first_name was empty, use Hospital Name
+                if not user.first_name:
+                    user.first_name = "Admin"
+                if not user.last_name:
+                    user.last_name = hospital_name
+            
+            user.save()
+            
+        except Exception as e:
+            print(f"Error linking hospital: {e}")
+            # User is created but hospital link failed - soft error
         
         return user
 

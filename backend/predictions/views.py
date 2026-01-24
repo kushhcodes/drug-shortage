@@ -90,6 +90,12 @@ class PredictShortageView(APIView):
                     )
             
             # Add default values
+            # Ensure numeric types
+            if 'current_stock' in data:
+                data['current_stock'] = float(data['current_stock'])
+            if 'daily_consumption' in data:
+                data['daily_consumption'] = float(data['daily_consumption'])
+
             defaults = {
                 'reorder_level': data.get('daily_consumption', 0) * 7,
                 'drug_category': 'General', 

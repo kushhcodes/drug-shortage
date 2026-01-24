@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Activity, Eye, EyeOff, ArrowLeft, AlertCircle, Building2, Mail, Phone, MapPin, Shield } from 'lucide-react';
-import { login } from '@/lib/api';
+import { login, register } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
@@ -62,6 +62,12 @@ const Login = () => {
   const handleRegistrationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!registrationData.hospitalName) { setError('Hospital Name is required'); return; }
+    if (!registrationData.email) { setError('Email is required'); return; }
+    if (!registrationData.phone) { setError('Phone is required'); return; }
+    if (!registrationData.address) { setError('Address is required'); return; }
+    if (!registrationData.password) { setError('Password is required'); return; }
+
     if (registrationData.password !== registrationData.confirmPassword) {
       setError('Passwords do not match.');
       return;
@@ -75,13 +81,38 @@ const Login = () => {
     setIsLoading(true);
     setError('');
 
-    // Simulate registration - in real app, this would call a registration API
-    setTimeout(() => {
+    try {
+      // 1. Create User
+      // Note: We are using email as username here for simplicity, or splitting email
+      const username = registrationData.email.split('@')[0] + Math.floor(Math.random() * 1000);
+
+      const payload = {
+        username: username,
+        email: registrationData.email,
+        password: registrationData.password,
+        password_confirm: registrationData.confirmPassword,
+        phone: registrationData.phone,
+        role: 'HOSPITAL_ADMIN',
+        hospital_name: registrationData.hospitalName,
+        address: registrationData.address,
+        first_name: 'Admin',
+        last_name: 'User'
+      };
+
+      await register(payload);
+
+      // 2. Auto Login
+      await login(registrationData.email, registrationData.password);
+      await refreshUser();
+
+      window.location.href = '/dashboard';
+
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Registration failed.');
+    } finally {
       setIsLoading(false);
-      setAuthMode('login');
-      setEmail(registrationData.email);
-      setRegistrationData(initialRegistrationData);
-    }, 1500);
+    }
   };
 
   const updateRegistrationData = (field: keyof RegistrationData, value: string) => {
@@ -148,8 +179,8 @@ const Login = () => {
                 type="button"
                 onClick={() => { setAuthMode('login'); setError(''); }}
                 className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${authMode === 'login'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
                   }`}
               >
                 Login
@@ -158,8 +189,8 @@ const Login = () => {
                 type="button"
                 onClick={() => { setAuthMode('register'); setError(''); }}
                 className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${authMode === 'register'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
                   }`}
               >
                 Register
@@ -329,9 +360,9 @@ const Login = () => {
                       <div className="flex items-center gap-2">
                         <Progress value={passwordStrength.strength} className={`h-1.5 flex-1 ${passwordStrength.color}`} />
                         <span className={`text-xs font-medium ${passwordStrength.strength <= 25 ? 'text-destructive' :
-                            passwordStrength.strength <= 50 ? 'text-yellow-500' :
-                              passwordStrength.strength <= 75 ? 'text-blue-500' :
-                                'text-green-500'
+                          passwordStrength.strength <= 50 ? 'text-yellow-500' :
+                            passwordStrength.strength <= 75 ? 'text-blue-500' :
+                              'text-green-500'
                           }`}>{passwordStrength.label}</span>
                       </div>
                       <p className="text-xs text-muted-foreground">
@@ -370,7 +401,7 @@ const Login = () => {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={isLoading || !isFormValid}
+                  disabled={isLoading}
                 >
                   {isLoading ? 'Creating Account...' : 'Create Account'}
                 </Button>

@@ -249,6 +249,59 @@ with transaction.atomic():
         {'hospital_idx': 4, 'medicine_idx': 6, 'stock': 180, 'reorder': 100, 'max': 500, 'daily': 12, 'desc': 'MEDIUM'},
         {'hospital_idx': 0, 'medicine_idx': 7, 'stock': 45, 'reorder': 80, 'max': 400, 'daily': 9, 'desc': 'HIGH'},
     ]
+
+    # Generate 50+ random inventory items for robust testing
+    import random
+    for _ in range(50):
+        h_idx = random.randint(0, 4)
+        m_idx = random.randint(0, 9)
+        daily = random.randint(5, 50)
+        max_cap = random.randint(200, 1000)
+        reorder = int(daily * 7) # 1 week supply
+        
+        # Create scenarios:
+        # 1. Critical (3-4 days left)
+        # 2. High (1 week left)
+        # 3. Medium (2 weeks left)
+        # 4. Low (Plenty)
+        
+        scenario_type = random.choice(['critical', 'high', 'medium', 'low', 'low', 'low'])
+        
+        if scenario_type == 'critical':
+            # Critical: very low stock
+            stock = random.randint(1, max(2, int(daily * 3)))
+            desc = 'CRITICAL'
+        elif scenario_type == 'high':
+             # High risk: < 1 week
+             lower = int(daily * 4)
+             upper = int(daily * 7)
+             if lower >= upper: upper = lower + 10
+             stock = random.randint(lower, upper)
+             desc = 'HIGH'
+        elif scenario_type == 'medium':
+             # Medium: 1-2 weeks
+             lower = int(daily * 8)
+             upper = int(daily * 14)
+             if lower >= upper: upper = lower + 20
+             stock = random.randint(lower, upper)
+             desc = 'MEDIUM'
+        else:
+             # Low: > 2 weeks
+             lower = int(daily * 15)
+             # Ensure max_cap is large enough
+             if max_cap <= lower: max_cap = lower + 500
+             stock = random.randint(lower, max_cap)
+             desc = 'LOW'
+
+        inventory_scenarios.append({
+            'hospital_idx': h_idx,
+            'medicine_idx': m_idx,
+            'stock': stock,
+            'reorder': reorder,
+            'max': max_cap,
+            'daily': daily,
+            'desc': desc
+        })
     
     inventory_items = []
     for scenario in inventory_scenarios:

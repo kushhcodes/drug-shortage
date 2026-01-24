@@ -28,9 +28,23 @@ class HospitalViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if user.is_superuser or user.role == 'HEALTH_AUTHORITY':
             return Hospital.objects.all()
-        elif user.is_hospital_staff and user.hospital:
-            return Hospital.objects.filter(id=user.hospital.id)
+        elif user.is_hospital_staff:
+            # If user has a hospital, show it
+            if user.hospital:
+                return Hospital.objects.filter(id=user.hospital.id)
+            # If user has NO hospital, let them see nothing (until they create one)
+            return Hospital.objects.none()
         return Hospital.objects.none()
+
+    def perform_create(self, serializer):
+        hospital = serializer.save()
+        user = self.request.user
+        # If user has no hospital, assign this new one to them!
+        if not user.hospital:
+            user.hospital = hospital
+            user.save()
+            # Force refresh of user instance to update permissions/queryset logic immediately
+            user.refresh_from_db()
     
     @action(detail=True, methods=['get'])
     def inventory(self, request, pk=None):
@@ -67,6 +81,14 @@ class InventoryViewSet(viewsets.ModelViewSet):
         elif user.is_hospital_staff and user.hospital:
             return queryset.filter(hospital=user.hospital)
         return queryset.none()
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        if user.is_hospital_staff and user.hospital:
+            # Force assignment to user's hospital to prevent cross-posting
+            serializer.save(hospital=user.hospital)
+        else:
+            serializer.save()
     
     @action(detail=False, methods=['get'])
     def low_stock(self, request):

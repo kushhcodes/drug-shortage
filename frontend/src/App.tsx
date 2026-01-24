@@ -16,6 +16,8 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+import ProtectedRoute from "@/components/ProtectedRoute";
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -26,13 +28,39 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/dashboard/hospitals" element={<DashboardHospitals />} />
-            <Route path="/dashboard/inventory" element={<DashboardInventory />} />
-            <Route path="/dashboard/alerts" element={<DashboardAlerts />} />
-            <Route path="/dashboard/predictions" element={<DashboardPredictions />} />
-            <Route path="/dashboard/medicines" element={<DashboardMedicines />} />
-   
+
+            {/* Protected Dashboard Routes */}
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/hospitals" element={
+              <ProtectedRoute>
+                <DashboardHospitals />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/inventory" element={
+              <ProtectedRoute>
+                <DashboardInventory />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/alerts" element={
+              <ProtectedRoute>
+                <DashboardAlerts />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/predictions" element={
+              <ProtectedRoute>
+                <DashboardPredictions />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/medicines" element={
+              <ProtectedRoute>
+                <DashboardMedicines />
+              </ProtectedRoute>
+            } />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

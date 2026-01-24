@@ -99,14 +99,20 @@ const DashboardHospitals = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // Auto-generate reg number if missing to avoid unique constraint error
+      const payload = { ...formData };
+      if (!payload.registration_number) {
+        payload.registration_number = `REG-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      }
+
       if (editingHospital) {
-        await updateHospital(editingHospital.id, formData);
+        await updateHospital(editingHospital.id, payload);
         toast({
           title: 'Success',
           description: 'Hospital updated successfully',
         });
       } else {
-        await createHospital(formData);
+        await createHospital(payload);
         toast({
           title: 'Success',
           description: 'Hospital created successfully',

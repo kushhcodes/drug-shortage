@@ -51,6 +51,10 @@ export const apiRequest = async <T>(
     throw new Error(`API Error: ${response.status}`);
   }
 
+  if (response.status === 204) {
+    return {} as T;
+  }
+
   return response.json();
 };
 
@@ -65,6 +69,22 @@ export const login = async (email: string, password: string) => {
   );
   setAuthToken(response.access);
   setRefreshToken(response.refresh);
+  return response;
+};
+
+export const register = async (data: any) => {
+  const response = await apiRequest<{ user: any; tokens: { access: string; refresh: string } }>(
+    '/api/auth/register/',
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }
+  );
+  // Auto login behavior
+  if (response.tokens) {
+    setAuthToken(response.tokens.access);
+    setRefreshToken(response.tokens.refresh);
+  }
   return response;
 };
 
@@ -251,33 +271,33 @@ export const deleteMedicine = (id: number) =>
 
 // Inventory CRUD
 export const getInventoryAdmin = () =>
-  apiRequest<Inventory[]>('/api/inventory/');
+  apiRequest<Inventory[]>('/api/hospitals/inventory/');
 
 export const getInventoryItem = (id: number) =>
-  apiRequest<Inventory>(`/api/inventory/${id}/`);
+  apiRequest<Inventory>(`/api/hospitals/inventory/${id}/`);
 
 export const createInventory = (data: Partial<Inventory>) =>
-  apiRequest<Inventory>('/api/inventory/', {
+  apiRequest<Inventory>('/api/hospitals/inventory/', {
     method: 'POST',
     body: JSON.stringify(data),
   });
 
 export const updateInventory = (id: number, data: Partial<Inventory>) =>
-  apiRequest<Inventory>(`/api/inventory/${id}/`, {
+  apiRequest<Inventory>(`/api/hospitals/inventory/${id}/`, {
     method: 'PATCH',
     body: JSON.stringify(data),
   });
 
 export const deleteInventory = (id: number) =>
-  apiRequest<void>(`/api/inventory/${id}/`, {
+  apiRequest<void>(`/api/hospitals/inventory/${id}/`, {
     method: 'DELETE',
   });
 
 export const getLowStockAll = () =>
-  apiRequest<Inventory[]>('/api/inventory/low_stock/');
+  apiRequest<Inventory[]>('/api/hospitals/inventory/low_stock/');
 
 export const getOutOfStock = () =>
-  apiRequest<Inventory[]>('/api/inventory/out_of_stock/');
+  apiRequest<Inventory[]>('/api/hospitals/inventory/out_of_stock/');
 
 // Alerts CRUD
 export const getAlerts = () =>
