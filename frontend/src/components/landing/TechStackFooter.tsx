@@ -6,7 +6,7 @@ const backendTech = ['Django 4', 'Django REST Framework', 'JWT Auth', 'PostgreSQ
 
 const TechStackFooter = () => {
   return (
-    <footer className="py-16 bg-background dark:bg-secondary text-foreground dark:text-secondary-foreground border-t border-border">
+    <footer className="py-16 bg-background text-foreground border-t border-border">
       <div className="container mx-auto px-4">
         <div className="grid md:grid-cols-3 gap-12 mb-12">
           {/* Brand */}
@@ -18,14 +18,14 @@ const TechStackFooter = () => {
               <span className="font-semibold text-lg">MedPredict</span>
             </div>
             <p className="text-muted-foreground text-sm leading-relaxed">
-              Hospital Drug Shortage Prediction & Inventory Monitoring System. 
+              Hospital Drug Shortage Prediction & Inventory Monitoring System.
               Built for healthcare professionals who need reliable supply chain insights.
             </p>
           </div>
 
           {/* Frontend Stack */}
           <div>
-            <h3 className="font-semibold mb-4 text-foreground dark:text-secondary-foreground">Frontend Stack</h3>
+            <h3 className="font-semibold mb-4 text-foreground">Frontend Stack</h3>
             <div className="flex flex-wrap gap-2">
               {frontendTech.map((tech) => (
                 <Badge key={tech} variant="outline" className="border-border text-muted-foreground">
@@ -37,7 +37,7 @@ const TechStackFooter = () => {
 
           {/* Backend Stack */}
           <div>
-            <h3 className="font-semibold mb-4 text-foreground dark:text-secondary-foreground">Backend Stack</h3>
+            <h3 className="font-semibold mb-4 text-foreground">Backend Stack</h3>
             <div className="flex flex-wrap gap-2">
               {backendTech.map((tech) => (
                 <Badge key={tech} variant="outline" className="border-border text-muted-foreground">
